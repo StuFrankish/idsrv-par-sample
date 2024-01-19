@@ -1,5 +1,6 @@
 using Duende.IdentityServer.EntityFramework.DbContexts;
 using Duende.IdentityServer.EntityFramework.Mappers;
+using IdentityServer.ValidatorExtentions;
 using IdentityServerHost;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -78,6 +79,7 @@ internal static class HostingExtensions
                 options.ConfigureDbContext = builder => builder.UseSqlServer(connectionString, sql => sql.MigrationsAssembly(migrationsAssembly));
             })
             .AddServerSideSessions()
+            .AddCustomAuthorizeRequestValidator<CustomAuthorizeEndpointValidator>()
             .AddTestUsers(TestUsers.Users);
 
         return builder.Build();
