@@ -13,6 +13,8 @@ public class CustomAuthorizeEndpointValidator(IProfileService profileService) : 
 
     public Task ValidateAsync(CustomAuthorizeRequestValidationContext context)
     {
+        Log.Information(messageTemplate: "Starting custom Authorize Endpoint validation");
+
         var validatedRequest = context.Result.ValidatedRequest;
         var subject = validatedRequest.Subject;
         
