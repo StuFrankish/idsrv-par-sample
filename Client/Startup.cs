@@ -1,22 +1,18 @@
+using IdentityModel;
+using IdentityModel.Client;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System;
-using Microsoft.Extensions.Configuration;
-using IdentityModel.Client;
 
 namespace Client;
 
-public class Startup
+public class Startup(IConfiguration configuration)
 {
-    private readonly IConfiguration _configuration;
+    private readonly IConfiguration _configuration = configuration;
 
-    public Startup(IConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
-    
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddTransient<ParOidcEvents>();
@@ -27,10 +23,10 @@ public class Startup
 
         // add cookie-based session management with OpenID Connect authentication
         services.AddAuthentication(options =>
-        {
-            options.DefaultScheme = "cookie";
-            options.DefaultChallengeScheme = "oidc";
-        })
+            {
+                options.DefaultScheme = "cookie";
+                options.DefaultChallengeScheme = "oidc";
+            })
             .AddCookie("cookie", options =>
             {
                 options.Cookie.Name = "mvc.par";
@@ -46,8 +42,8 @@ public class Startup
             })
             .AddOpenIdConnect("oidc", options =>
             {
+                //TODO: Load these values from secure source / app settings
                 options.Authority = Urls.IdentityServer;
-
                 options.ClientId = "mvc.par";
                 options.ClientSecret = "secret";
 
@@ -63,19 +59,18 @@ public class Startup
                 options.GetClaimsFromUserInfoEndpoint = true;
                 options.SaveTokens = true;
                 options.MapInboundClaims = false;
-                
-                // needed to add PAR support
+
+                // Needed to add PAR support
                 options.EventsType = typeof(ParOidcEvents);
-                
+
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    NameClaimType = "name",
-                    RoleClaimType = "role"
+                    NameClaimType = JwtClaimTypes.Name,
+                    RoleClaimType = JwtClaimTypes.Role
                 };
 
                 options.DisableTelemetry = true;
             });
-
     }
 
     public void Configure(IApplicationBuilder app)
@@ -91,7 +86,8 @@ public class Startup
 
         app.UseEndpoints(endpoints =>
         {
-            endpoints.MapDefaultControllerRoute()
+            endpoints
+                .MapDefaultControllerRoute()
                 .RequireAuthorization();
         });
     }
