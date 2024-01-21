@@ -16,27 +16,34 @@ public class CustomAuthorizeEndpointValidator(IProfileService profileService) : 
         Log.Information(messageTemplate: "Starting custom Authorize Endpoint validation");
 
         var validatedRequest = context.Result.ValidatedRequest;
-        var subject = validatedRequest.Subject;
+        var claimsPrincipal = validatedRequest.Subject;
         
-        if (subject is not null && subject.IsAuthenticated())
+        // Only want to trigger this once the user is authenticated.
+        if (claimsPrincipal.IsAuthenticated())
         {
-            var requiredClaim = validatedRequest.ClientId + "_BasicAccess";
-
+            // Setup the profile data request.
             var dataRequest = new ProfileDataRequestContext
             {
                 ValidatedRequest = validatedRequest,
-                Subject = subject,
+                Subject = claimsPrincipal,
                 Client = validatedRequest.Client,
+
+                // We're only interested in the role claim at this point.
                 RequestedClaimTypes = [JwtClaimTypes.Role]
             };
 
+            // Execute the request and determine if the user has the required role for the client.
             _profileService.GetProfileDataAsync(dataRequest);
 
-            bool hasRequiredClaim = dataRequest.IssuedClaims.Any(claim => claim.Type == JwtClaimTypes.Role && claim.Value == requiredClaim);
+            bool hasRequiredClaim = dataRequest.IssuedClaims
+                .Any(claim => 
+                    JwtClaimTypes.Role.Equals(claim.Type) && 
+                    (validatedRequest.ClientId + "_BasicAccess").Equals(claim.Value)
+                );
 
+            // If the required role wasn't found, we raise an error.
             if (!hasRequiredClaim)
             {
-                // Always return an error when the user doesn't have a permission required for the app.
                 context.Result.IsError = true;
                 context.Result.Error = "missing_basic_access";
                 context.Result.ErrorDescription = "User doesn't have permission to access the specified client.";
