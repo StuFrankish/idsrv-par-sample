@@ -12,10 +12,8 @@ public static class Config
 
     public static IEnumerable<ApiScope> ApiScopes =>
         [ 
-            new("api1", "MyAPI") 
+            new("api1") 
         ];
-
-    public static IEnumerable<ApiResource> ApiResources => [];
 
     public static IEnumerable<Client> Clients =>
         [
