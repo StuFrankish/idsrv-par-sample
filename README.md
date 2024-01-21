@@ -1,3 +1,5 @@
+[![.NET Build](https://github.com/StuFrankish/idsrv-par-sample/actions/workflows/dotnet.yml/badge.svg)](https://github.com/StuFrankish/idsrv-par-sample/actions/workflows/dotnet.yml)
+
 # Proof of Concept Requirements
 1. The Client & Server must use Authorization Code flow, with PKCE
 2. The Client is required to use Pushed Authorization Requests
