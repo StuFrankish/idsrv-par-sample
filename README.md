@@ -1,4 +1,5 @@
 [![.NET Build](https://github.com/StuFrankish/idsrv-par-sample/actions/workflows/dotnet.yml/badge.svg)](https://github.com/StuFrankish/idsrv-par-sample/actions/workflows/dotnet.yml)
+[![CodeQL](https://github.com/StuFrankish/idsrv-par-sample/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/StuFrankish/idsrv-par-sample/actions/workflows/github-code-scanning/codeql)
 
 # Proof of Concept Requirements
 1. The Client & Server must use Authorization Code flow, with PKCE
