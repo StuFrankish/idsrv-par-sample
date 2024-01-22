@@ -1,6 +1,13 @@
 ﻿namespace Client;
 
-public class Urls
+public class ConfigurationSections
 {
-    public const string IdentityServer = "https://localhost:5001";
+    public const string IdentityProvider = "IdentityProvider";
+}
+
+public static class OpenIdConnectScopes
+{
+    public const string OpenId = "openid";
+    public const string Profile = "profile";
+    public const string OfflineAccess = "offline_access";
 }

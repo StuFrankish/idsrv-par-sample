@@ -1,9 +1,11 @@
+using Client.Options;
 using IdentityModel;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using System;
 
@@ -15,8 +17,24 @@ public class Startup(IConfiguration configuration)
 
     public void ConfigureServices(IServiceCollection services)
     {
+        // Configure our options object.
+        services.Configure<IdentityProviderOptions>(_configuration.GetSection(key: ConfigurationSections.IdentityProvider));
+
+        // Create a local instance of the options for immediate use.
+        var identityProviderOptions = new IdentityProviderOptions();
+        _configuration.GetSection(ConfigurationSections.IdentityProvider).Bind(identityProviderOptions);
+
+        // Setup the rest of the client.
         services.AddTransient<ParOidcEvents>();
-        services.AddSingleton<IDiscoveryCache>(_ => new DiscoveryCache(Urls.IdentityServer));
+        services.AddSingleton<IDiscoveryCache>(_ => new DiscoveryCache(identityProviderOptions.Authority));
+
+        // add automatic token management
+        services.AddOpenIdConnectAccessTokenManagement();
+
+        // Add PAR interaction httpClient
+        services.AddHttpClient<ParOidcEvents>(name: "par_interaction_client", options => {
+            options.BaseAddress = new Uri(uriString: identityProviderOptions.Authority);
+        });
 
         // add MVC
         services.AddControllersWithViews();
@@ -32,7 +50,7 @@ public class Startup(IConfiguration configuration)
                 options.Cookie.Name = "mvc.par";
 
                 options.ExpireTimeSpan = TimeSpan.FromHours(8);
-                options.SlidingExpiration = false;
+                options.SlidingExpiration = true;
 
                 options.Events.OnSigningOut = async e =>
                 {
@@ -42,34 +60,33 @@ public class Startup(IConfiguration configuration)
             })
             .AddOpenIdConnect("oidc", options =>
             {
-                //TODO: Load these values from secure source / app settings
-                options.Authority = Urls.IdentityServer;
-                options.ClientId = "mvc.par";
-                options.ClientSecret = "secret";
+                // Needed to add PAR support
+                options.EventsType = typeof(ParOidcEvents);
 
-                // code flow + PKCE (PKCE is turned on by default)
-                options.ResponseType = "code";
+                // Setup Client
+                options.Authority = identityProviderOptions.Authority;
+                options.ClientId = identityProviderOptions.ClientId;
+                options.ClientSecret = identityProviderOptions.ClientSecret;
+
+                // code flow + PKCE (PKCE is turned on by default and required by the identity provider in this sample)
+                options.ResponseType = OpenIdConnectResponseType.Code;
                 options.UsePkce = true;
 
                 options.Scope.Clear();
-                options.Scope.Add("openid");
-                options.Scope.Add("profile");
-                options.Scope.Add("offline_access");
+                options.Scope.Add(OpenIdConnectScopes.OpenId);
+                options.Scope.Add(OpenIdConnectScopes.Profile);
+                options.Scope.Add(OpenIdConnectScopes.OfflineAccess);
 
                 options.GetClaimsFromUserInfoEndpoint = true;
                 options.SaveTokens = true;
                 options.MapInboundClaims = false;
-
-                // Needed to add PAR support
-                options.EventsType = typeof(ParOidcEvents);
+                options.DisableTelemetry = true;
 
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     NameClaimType = JwtClaimTypes.Name,
                     RoleClaimType = JwtClaimTypes.Role
                 };
-
-                options.DisableTelemetry = true;
             });
     }
 

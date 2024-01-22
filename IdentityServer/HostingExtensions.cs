@@ -1,5 +1,6 @@
 using Duende.IdentityServer.EntityFramework.DbContexts;
 using Duende.IdentityServer.EntityFramework.Mappers;
+using IdentityServer.Options;
 using IdentityServer.ValidatorExtentions;
 using IdentityServerHost;
 using Microsoft.EntityFrameworkCore;
@@ -59,12 +60,18 @@ internal static class HostingExtensions
         }
     }
 
-    public static WebApplication ConfigureServices(this WebApplicationBuilder builder)
+    public static WebApplication ConfigureServices(this WebApplicationBuilder builder, IConfiguration configuration)
     {
-        var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
-        const string connectionString = @"Data Source=.;Initial Catalog=Duende.IdentityServer;Integrated Security=True;Connect Timeout=30;Encrypt=True;TrustServerCertificate=True;ApplicationIntent=ReadWrite;MultiSubnetFailover=False";
+        // Configure our connections strings object.
+        builder.Services.Configure<ConnectionStrings>(configuration.GetSection(key: ConfigurationSections.ConnectionStrings));
+
+        // Create a local instance of the options for immediate use.
+        var connectionStrings = new ConnectionStrings();
+        configuration.GetSection(ConfigurationSections.ConnectionStrings).Bind(connectionStrings);
 
         builder.Services.AddRazorPages();
+
+        var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
 
         builder.Services.AddIdentityServer(options =>
             {
@@ -72,11 +79,11 @@ internal static class HostingExtensions
             })
             .AddConfigurationStore(options =>
             {
-                options.ConfigureDbContext = builder => builder.UseSqlServer(connectionString, sql => sql.MigrationsAssembly(migrationsAssembly));
+                options.ConfigureDbContext = builder => builder.UseSqlServer(connectionStrings.SqlServer, sql => sql.MigrationsAssembly(migrationsAssembly));
             })
             .AddOperationalStore(options =>
             {
-                options.ConfigureDbContext = builder => builder.UseSqlServer(connectionString, sql => sql.MigrationsAssembly(migrationsAssembly));
+                options.ConfigureDbContext = builder => builder.UseSqlServer(connectionStrings.SqlServer, sql => sql.MigrationsAssembly(migrationsAssembly));
             })
             .AddServerSideSessions()
             .AddCustomAuthorizeRequestValidator<CustomAuthorizeEndpointValidator>()
@@ -88,6 +95,7 @@ internal static class HostingExtensions
     public static WebApplication ConfigurePipeline(this WebApplication app)
     { 
         app.UseSerilogRequestLogging();
+
         if (app.Environment.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
