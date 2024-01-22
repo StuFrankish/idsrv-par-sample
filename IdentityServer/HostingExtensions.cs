@@ -13,6 +13,7 @@ internal static class HostingExtensions
     {
         using var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope();
 
+        // Create a list of contexts to loop through and migrate.
         List<Type> contexts = [
             typeof(PersistedGrantDbContext),
             typeof(ConfigurationDbContext)
@@ -24,13 +25,10 @@ internal static class HostingExtensions
             dbContext.Database.Migrate();
         }
 
-        var persistedGrantContext = serviceScope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>();
-        persistedGrantContext.Database.Migrate();
-
+        // Create an instance of the ConfigurationDbContext so we can seed data.
         var configurationContext = serviceScope.ServiceProvider.GetRequiredService<ConfigurationDbContext>();
-        configurationContext.Database.Migrate();
-
-
+        
+        // Seed clients
         if (!configurationContext.Clients.Any())
         {
             foreach (var client in Config.Clients)
@@ -40,6 +38,7 @@ internal static class HostingExtensions
             configurationContext.SaveChanges();
         }
 
+        // Seed resources
         if (!configurationContext.IdentityResources.Any())
         {
             foreach (var resource in Config.IdentityResources)
@@ -49,6 +48,7 @@ internal static class HostingExtensions
             configurationContext.SaveChanges();
         }
 
+        // Seed API Scopes
         if (!configurationContext.ApiScopes.Any())
         {
             foreach (var resource in Config.ApiScopes)
