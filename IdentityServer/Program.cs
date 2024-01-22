@@ -17,7 +17,7 @@ try
         .ReadFrom.Configuration(ctx.Configuration));
 
     var app = builder
-        .ConfigureServices()
+        .ConfigureServices(builder.Configuration)
         .ConfigurePipeline();
     
     app.Run();

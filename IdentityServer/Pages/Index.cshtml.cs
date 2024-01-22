@@ -1,7 +1,6 @@
-using System.Linq;
-using System.Reflection;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Reflection;
 
 namespace IdentityServerHost.Pages.Home;
 
