@@ -60,14 +60,14 @@ internal static class HostingExtensions
         }
     }
 
-    public static WebApplication ConfigureServices(this WebApplicationBuilder builder, IConfiguration configuration)
+    public static WebApplication ConfigureServices(this WebApplicationBuilder builder)
     {
         // Configure our connections strings object.
-        builder.Services.Configure<ConnectionStrings>(configuration.GetSection(key: ConfigurationSections.ConnectionStrings));
+        builder.Services.Configure<ConnectionStrings>(builder.Configuration.GetSection(key: ConfigurationSections.ConnectionStrings));
 
         // Create a local instance of the options for immediate use.
         var connectionStrings = new ConnectionStrings();
-        configuration.GetSection(ConfigurationSections.ConnectionStrings).Bind(connectionStrings);
+        builder.Configuration.GetSection(ConfigurationSections.ConnectionStrings).Bind(connectionStrings);
 
         builder.Services.AddRazorPages();
 
