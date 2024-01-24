@@ -1,4 +1,3 @@
-using System;
 using Duende.IdentityServer.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -9,15 +8,10 @@ namespace IdentityServerHost.Pages.ExternalLogin;
 
 [AllowAnonymous]
 [SecurityHeaders]
-public class Challenge : PageModel
+public class Challenge(IIdentityServerInteractionService interactionService) : PageModel
 {
-    private readonly IIdentityServerInteractionService _interactionService;
+    private readonly IIdentityServerInteractionService _interactionService = interactionService;
 
-    public Challenge(IIdentityServerInteractionService interactionService)
-    {
-        _interactionService = interactionService;
-    }
-        
     public IActionResult OnGet(string scheme, string returnUrl)
     {
         if (string.IsNullOrEmpty(returnUrl)) returnUrl = "~/";
