@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using Duende.IdentityServer.Events;
 using Duende.IdentityServer.Extensions;
 using Duende.IdentityServer.Services;
@@ -12,19 +11,13 @@ namespace IdentityServerHost.Pages.Logout;
 
 [SecurityHeaders]
 [AllowAnonymous]
-public class Index : PageModel
+public class Index(IIdentityServerInteractionService interaction, IEventService events) : PageModel
 {
-    private readonly IIdentityServerInteractionService _interaction;
-    private readonly IEventService _events;
+    private readonly IIdentityServerInteractionService _interaction = interaction;
+    private readonly IEventService _events = events;
 
     [BindProperty] 
     public string LogoutId { get; set; }
-
-    public Index(IIdentityServerInteractionService interaction, IEventService events)
-    {
-        _interaction = interaction;
-        _events = events;
-    }
 
     public async Task<IActionResult> OnGet(string logoutId)
     {
