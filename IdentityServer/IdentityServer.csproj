@@ -5,7 +5,7 @@
     <UserSecretsId>38ced442-cf32-4289-bb08-57d4a78831b3</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Duende.IdentityServer" Version="7.0.0" />
+    <PackageReference Include="Duende.IdentityServer" Version="7.0.1" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.1">
