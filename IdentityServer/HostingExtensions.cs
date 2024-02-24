@@ -1,9 +1,14 @@
 using Duende.IdentityServer.EntityFramework.DbContexts;
 using Duende.IdentityServer.EntityFramework.Mappers;
+using HealthChecks.UI.Client;
+using HealthChecks.Uptime;
 using IdentityServer.Options;
 using IdentityServer.ValidatorExtentions;
 using IdentityServerHost;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
 
 namespace IdentityServer;
@@ -71,8 +76,9 @@ internal static class HostingExtensions
 
         builder.Services.AddRazorPages();
 
-        var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
+        // Add Identity Server Middleware
 
+        var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
         builder.Services.AddIdentityServer(options =>
             {
                 options.PushedAuthorization.AllowUnregisteredPushedRedirectUris = true;
@@ -89,6 +95,12 @@ internal static class HostingExtensions
             .AddCustomAuthorizeRequestValidator<CustomAuthorizeEndpointValidator>()
             .AddTestUsers(TestUsers.Users);
 
+        // Add Healthchecks
+        builder.Services.AddHealthChecks()
+            .AddSqlServer(connectionString: connectionStrings.SqlServer);
+
+        builder.Services.AddApplicationUptimeHealthCheck();
+
         return builder.Build();
     }
 
@@ -102,6 +114,12 @@ internal static class HostingExtensions
         }
 
         InitializeDatabase(app);
+
+        app.UseHealthChecks(path: "/_health", options: new HealthCheckOptions
+        {
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+            AllowCachingResponses = false
+        });
 
         app.UseStaticFiles();
         app.UseRouting();
