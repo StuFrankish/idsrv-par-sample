@@ -1,14 +1,14 @@
 using Duende.IdentityServer.EntityFramework.DbContexts;
 using Duende.IdentityServer.EntityFramework.Mappers;
+using Hangfire;
 using HealthChecks.UI.Client;
 using HealthChecks.Uptime;
 using IdentityServer.Options;
 using IdentityServer.ValidatorExtentions;
 using IdentityServerHost;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
 
 namespace IdentityServer;
@@ -76,6 +76,22 @@ internal static class HostingExtensions
 
         builder.Services.AddRazorPages();
 
+        // Add Hangfire services.
+        builder.Services.AddHangfire(configuration => configuration
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseSqlServerStorage(() => new SqlConnection(connectionStrings.SqlServer), options: new()
+            {
+                CommandBatchMaxTimeout = TimeSpan.FromMinutes(value: 5),
+                SlidingInvisibilityTimeout = TimeSpan.FromMinutes(value: 5),
+                QueuePollInterval = TimeSpan.Zero,
+                UseRecommendedIsolationLevel = true,
+                DisableGlobalLocks = true
+            }));
+
+        // Add the processing server as IHostedService
+        builder.Services.AddHangfireServer();
+
         // Add Identity Server Middleware
 
         var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
@@ -97,8 +113,13 @@ internal static class HostingExtensions
 
         // Add Healthchecks
         builder.Services.AddHealthChecks()
-            .AddSqlServer(connectionString: connectionStrings.SqlServer);
+            .AddSqlServer(connectionString: connectionStrings.SqlServer)
+            .AddHangfire((setup) => {
+                setup.MinimumAvailableServers = 1;
+                setup.MaximumJobsFailed = 10;
+            });
 
+        // Add custom healthcheck (handles service registration and AddHealthChecks call)
         builder.Services.AddApplicationUptimeHealthCheck();
 
         return builder.Build();
@@ -128,6 +149,9 @@ internal static class HostingExtensions
 
         app.UseAuthorization();
         app.MapRazorPages().RequireAuthorization();
+
+        app.UseHangfireDashboard(pathMatch: "/_hangfire");
+
 
         return app;
     }
