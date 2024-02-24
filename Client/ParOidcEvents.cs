@@ -1,3 +1,4 @@
+using Duende.Bff;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.Logging;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Client;
 
-public class ParOidcEvents(HttpClient httpClient, IDiscoveryCache discoveryCache, ILogger<ParOidcEvents> logger) : OpenIdConnectEvents
+public class ParOidcEvents(HttpClient httpClient, IDiscoveryCache discoveryCache, ILogger<ParOidcEvents> logger) : BffOpenIdConnectEvents(logger)
 {
     private readonly HttpClient _httpClient = httpClient;
     private readonly IDiscoveryCache _discoveryCache = discoveryCache;

@@ -88,6 +88,12 @@ public class Startup(IConfiguration configuration)
                     RoleClaimType = JwtClaimTypes.Role
                 };
             });
+
+        services.AddBff(options => {
+            options.EnableSessionCleanup = true;
+            options.SessionCleanupInterval = TimeSpan.FromMinutes(5);
+        })
+        .AddServerSideSessions();
     }
 
     public void Configure(IApplicationBuilder app)
@@ -106,6 +112,9 @@ public class Startup(IConfiguration configuration)
             endpoints
                 .MapDefaultControllerRoute()
                 .RequireAuthorization();
+
+            endpoints
+                .MapBffManagementEndpoints();
         });
     }
 }
