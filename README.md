@@ -7,3 +7,8 @@
 3. Users are required to have a client-specific role before being allowed to access the client
 
 Uses .Net 8 LTS and Duende Identity Server v7.
+
+# Additional Features
+- Hangfire background processing
+- Healthcheck endpoint
+- Custom uptime Healthcheck [Github Repo](https://github.com/StuFrankish/HealthChecks) | [Nuget](https://www.nuget.org/packages/HealthChecks.Uptime)
