@@ -111,12 +111,9 @@ internal static class HostingExtensions
             .AddCustomAuthorizeRequestValidator<CustomAuthorizeEndpointValidator>()
             .AddTestUsers(TestUsers.Users);
 
-        // Add custom healthcheck (handles service registration and AddHealthChecks call)
-        builder.Services.AddApplicationUptimeHealthCheck();
-
         // Add Healthchecks
         builder.Services.AddHealthChecks()
-            .UseApplicationUptimeHealthCheck()
+            .AddUptimeHealthCheck()
             .AddSqlServer(connectionString: connectionStrings.SqlServer)
             .AddHangfire((setup) => {
                 setup.MinimumAvailableServers = 1;

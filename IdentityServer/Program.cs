@@ -7,6 +7,7 @@ Log.Logger = new LoggerConfiguration()
 
 Log.Information(messageTemplate: "Starting up");
 
+
 try
 {
     var builder = WebApplication.CreateBuilder(args);
