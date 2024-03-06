@@ -15,7 +15,7 @@ namespace IdentityServer;
 
 internal static class HostingExtensions
 {
-    private static void InitializeDatabase(IApplicationBuilder app)
+    private static void InitializeDatabase(this IApplicationBuilder app, bool runSeeding = false)
     {
         using var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope();
 
@@ -30,6 +30,9 @@ internal static class HostingExtensions
             var dbContext = (DbContext)serviceScope.ServiceProvider.GetRequiredService(context);
             dbContext.Database.Migrate();
         }
+
+        // Exit early if seeding is not required.
+        if (!runSeeding) return;
 
         // Create an instance of the ConfigurationDbContext so we can seed data.
         var configurationContext = serviceScope.ServiceProvider.GetRequiredService<ConfigurationDbContext>();
@@ -67,12 +70,9 @@ internal static class HostingExtensions
 
     public static WebApplication ConfigureServices(this WebApplicationBuilder builder)
     {
-        // Configure our connections strings object.
-        builder.Services.Configure<ConnectionStrings>(builder.Configuration.GetSection(key: ConfigurationSections.ConnectionStrings));
-
-        // Create a local instance of the options for immediate use.
-        var connectionStrings = new ConnectionStrings();
-        builder.Configuration.GetSection(ConfigurationSections.ConnectionStrings).Bind(connectionStrings);
+        // Create a local instance of the ConnectionStrings & ApplicationKeys options for immediate use.
+        var connectionStrings = builder.GetCustomOptionsConfiguration<ConnectionStrings>(ConfigurationSections.ConnectionStrings);
+        var applicationKeys = builder.GetCustomOptionsConfiguration<ApplicationKeys>(ConfigurationSections.ApplicationKeys);
 
         builder.Services.AddRazorPages();
 
@@ -124,15 +124,19 @@ internal static class HostingExtensions
     }
 
     public static WebApplication ConfigurePipeline(this WebApplication app)
-    { 
+    {
+        bool isDevEnvironment = app.Environment.IsDevelopment();
+
         app.UseSerilogRequestLogging();
 
-        if (app.Environment.IsDevelopment())
+        if (isDevEnvironment)
         {
             app.UseDeveloperExceptionPage();
         }
 
-        InitializeDatabase(app);
+        app.InitializeDatabase(runSeeding: isDevEnvironment);
+
+        app.UseHangfireDashboard(pathMatch: "/_hangfire");
 
         app.UseHealthChecks(path: "/_health", options: new HealthCheckOptions
         {
@@ -147,9 +151,6 @@ internal static class HostingExtensions
 
         app.UseAuthorization();
         app.MapRazorPages().RequireAuthorization();
-
-        app.UseHangfireDashboard(pathMatch: "/_hangfire");
-
 
         return app;
     }

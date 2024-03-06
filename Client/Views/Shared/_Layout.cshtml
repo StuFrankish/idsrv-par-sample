@@ -28,9 +28,6 @@
                         @if (User.Identity.IsAuthenticated)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="CallApi">Call API</a>
-                            </li>
-                            <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Logout">Logout</a>
                             </li>
                         }
@@ -41,6 +38,19 @@
     </header>
     <div class="container">
         <main role="main" class="pb-3">
+
+            @if (User.Identity.IsAuthenticated)
+            {
+                <div class="alert alert-success px-2 py-1" role="alert">
+                    You are authenticated.
+                </div>
+            } else
+            {
+                <div class="alert alert-light px-2 py-1" role="alert">
+                    You are not authenticated.
+                </div>
+            }
+
             @RenderBody()
         </main>
     </div>
