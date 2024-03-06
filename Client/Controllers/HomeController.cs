@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,6 +12,15 @@ public class HomeController() : Controller
 
     public IActionResult Secure() => View();
 
-    public IActionResult Logout() => SignOut("oidc", "cookie");
+    public IActionResult Logout() => SignOut(OpenIdConnectDefaults.AuthenticationScheme, CookieAuthenticationDefaults.AuthenticationScheme);
+
+    [AllowAnonymous]
+    public IActionResult AccessDenied() => View();
+
+    [AllowAnonymous]
+    public IActionResult Error() => View();
+
+    [AllowAnonymous]
+    public IActionResult LoggedOut() => View();
 
 }

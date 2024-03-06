@@ -1,10 +1,16 @@
 using Client.Options;
+using HealthChecks.UI.Client;
+using HealthChecks.Uptime;
 using IdentityModel;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -17,12 +23,17 @@ public class Startup(IConfiguration configuration)
 
     public void ConfigureServices(IServiceCollection services)
     {
-        // Configure our options object.
+        // Configure our options objects.
         services.Configure<IdentityProviderOptions>(_configuration.GetSection(key: ConfigurationSections.IdentityProvider));
+        services.Configure<LicensesOptions>(_configuration.GetSection(key: ConfigurationSections.Licenses));
 
-        // Create a local instance of the options for immediate use.
+        // Create a local instance of the IDP options for immediate use.
         var identityProviderOptions = new IdentityProviderOptions();
         _configuration.GetSection(ConfigurationSections.IdentityProvider).Bind(identityProviderOptions);
+
+        // Create a local instance of the license options for immediate use.
+        var licenseOptions = new LicensesOptions();
+        _configuration.GetSection(ConfigurationSections.Licenses).Bind(licenseOptions);
 
         // Setup the rest of the client.
         services.AddTransient<ParOidcEvents>();
@@ -42,10 +53,10 @@ public class Startup(IConfiguration configuration)
         // add cookie-based session management with OpenID Connect authentication
         services.AddAuthentication(options =>
             {
-                options.DefaultScheme = "cookie";
-                options.DefaultChallengeScheme = "oidc";
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
             })
-            .AddCookie("cookie", options =>
+            .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
             {
                 options.Cookie.Name = "mvc.par";
 
@@ -58,7 +69,7 @@ public class Startup(IConfiguration configuration)
                     await e.HttpContext.RevokeRefreshTokenAsync();
                 };
             })
-            .AddOpenIdConnect("oidc", options =>
+            .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
             {
                 // Needed to add PAR support
                 options.EventsType = typeof(ParOidcEvents);
@@ -90,15 +101,24 @@ public class Startup(IConfiguration configuration)
             });
 
         services.AddBff(options => {
+            options.LicenseKey = licenseOptions.DuendeBFF;
             options.EnableSessionCleanup = true;
             options.SessionCleanupInterval = TimeSpan.FromMinutes(5);
         })
         .AddServerSideSessions();
+
+        services.AddHealthChecks()
+            .AddUptimeHealthCheck()
+            .AddIdentityServer(idSvrUri: new Uri(uriString: identityProviderOptions.Authority));
     }
 
-    public void Configure(IApplicationBuilder app)
+    public void Configure(IApplicationBuilder app, IHostEnvironment environment)
     {
-        app.UseDeveloperExceptionPage();
+        if (environment.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
+
         app.UseHttpsRedirection();
         app.UseStaticFiles();
 
@@ -106,6 +126,12 @@ public class Startup(IConfiguration configuration)
 
         app.UseAuthentication();
         app.UseAuthorization();
+
+        app.UseHealthChecks(path: "/_health", options: new HealthCheckOptions
+        {
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+            AllowCachingResponses = false
+        });
 
         app.UseEndpoints(endpoints =>
         {

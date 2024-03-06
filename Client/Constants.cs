@@ -3,6 +3,7 @@
 public class ConfigurationSections
 {
     public const string IdentityProvider = "IdentityProvider";
+    public const string Licenses = "Licenses";
 }
 
 public static class OpenIdConnectScopes

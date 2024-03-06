@@ -1,7 +1,10 @@
+using Client.Options;
 using Duende.Bff;
 using IdentityModel.Client;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System;
 using System.Net.Http;
@@ -12,11 +15,45 @@ using System.Threading.Tasks;
 
 namespace Client;
 
-public class ParOidcEvents(HttpClient httpClient, IDiscoveryCache discoveryCache, ILogger<ParOidcEvents> logger) : BffOpenIdConnectEvents(logger)
+public class ParOidcEvents(HttpClient httpClient, IDiscoveryCache discoveryCache, ILogger<ParOidcEvents> logger, IOptions<IdentityProviderOptions> idpOptions) : BffOpenIdConnectEvents(logger)
 {
     private readonly HttpClient _httpClient = httpClient;
     private readonly IDiscoveryCache _discoveryCache = discoveryCache;
     private readonly ILogger<ParOidcEvents> _logger = logger;
+    private readonly IdentityProviderOptions _idpOptions = idpOptions.Value;
+
+    public override Task SignedOutCallbackRedirect(RemoteSignOutContext context)
+    {
+        // Custom logic for access denied
+        _logger.LogInformation(message: "Signed Out Handled in ParOidc Events");
+
+        context.Response.Redirect(location: "/Home/LoggedOut");
+        context.HandleResponse();
+
+        return Task.CompletedTask;
+    }
+
+    public override Task AccessDenied(AccessDeniedContext context)
+    {
+        // Custom logic for access denied
+        _logger.LogWarning(message: "Access Denied Handled in ParOidc Events");
+
+        context.Response.Redirect(location: "/Home/AccessDenied");
+        context.HandleResponse();
+
+        return Task.CompletedTask;
+    }
+
+    public override Task RemoteFailure(RemoteFailureContext context)
+    {
+        // Custom logic for handling remote failures
+        _logger.LogError(message: "Remote Failure Handled in ParOidc Events");
+
+        context.Response.Redirect(location: "/Home/Error");
+        context.HandleResponse();
+
+        return Task.CompletedTask;
+    }
 
     public override async Task RedirectToIdentityProvider(RedirectContext context)
     {
@@ -89,8 +126,8 @@ public class ParOidcEvents(HttpClient httpClient, IDiscoveryCache discoveryCache
         // Send our PAR request
         var requestBody = new FormUrlEncodedContent(context.ProtocolMessage.Parameters);
 
-        //TODO: The password should be loaded from a secure source.
-        _httpClient.SetBasicAuthentication(clientId, "secret");
+        // Load the clientSecret (password) from appSettings
+        _httpClient.SetBasicAuthentication(clientId, password: _idpOptions.ClientSecret);
 
         var disco = await _discoveryCache.GetAsync();
         if (disco.IsError)
@@ -103,7 +140,7 @@ public class ParOidcEvents(HttpClient httpClient, IDiscoveryCache discoveryCache
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception("PAR failure");
+            throw new Exception(message: "PAR failure");
         }
 
         return await response.Content.ReadFromJsonAsync<ParResponse>();
