@@ -27,18 +27,13 @@ public static class Config
                     new Secret("secret".Sha256())
                 },
 
-                RequireRequestObject = false,
-
                 AllowedGrantTypes = GrantTypes.Code,
                 RequirePkce = true,
 
                 RequirePushedAuthorization = true,
 
-                // Note that redirect uris are optional for PAR clients when the
-                // AllowUnregisteredPushedRedirectUris flag is enabled
-                // RedirectUris = { "https://localhost:44300/signin-oidc" },
-                
-                FrontChannelLogoutUri = "https://localhost:44300/signout-oidc",
+                BackChannelLogoutSessionRequired = true,
+                BackChannelLogoutUri = "https://localhost:44300/bff/backchannel",
                 PostLogoutRedirectUris = { "https://localhost:44300/signout-callback-oidc" },
 
                 AllowOfflineAccess = true,

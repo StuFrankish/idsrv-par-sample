@@ -1,11 +1,17 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - MVC Client</title>
+    <title>@ViewData["Title"] - MVC PAR Client</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" />
+
+    <script deferred src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script deferred src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script deferred src="~/js/site.js" asp-append-version="true"></script>
+
 </head>
 <body>
     <header>
@@ -38,26 +44,11 @@
     </header>
     <div class="container">
         <main role="main" class="pb-3">
-
-            @if (User.Identity.IsAuthenticated)
-            {
-                <div class="alert alert-success px-2 py-1" role="alert">
-                    You are authenticated.
-                </div>
-            } else
-            {
-                <div class="alert alert-light px-2 py-1" role="alert">
-                    You are not authenticated.
-                </div>
-            }
-
             @RenderBody()
         </main>
     </div>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
     @RenderSection("Scripts", required: false)
+
 </body>
 </html>

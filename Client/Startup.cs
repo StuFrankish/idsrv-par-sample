@@ -25,7 +25,6 @@ public class Startup(IConfiguration configuration)
     {
         // Configure our options objects.
         services.Configure<IdentityProviderOptions>(_configuration.GetSection(key: ConfigurationSections.IdentityProvider));
-        services.Configure<LicensesOptions>(_configuration.GetSection(key: ConfigurationSections.Licenses));
 
         // Create a local instance of the IDP options for immediate use.
         var identityProviderOptions = new IdentityProviderOptions();
@@ -47,6 +46,16 @@ public class Startup(IConfiguration configuration)
             options.BaseAddress = new Uri(uriString: identityProviderOptions.Authority);
         });
 
+        // Add session
+        services.AddDistributedMemoryCache();
+        services.AddSession(options =>
+        {
+            options.Cookie.Name = "mvc.par.session";
+            options.IdleTimeout = TimeSpan.FromMinutes(30);
+            options.Cookie.HttpOnly = true;
+            options.Cookie.IsEssential = true;
+        });
+
         // add MVC
         services.AddControllersWithViews();
 
@@ -59,15 +68,14 @@ public class Startup(IConfiguration configuration)
             .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
             {
                 options.Cookie.Name = "mvc.par";
-
-                options.ExpireTimeSpan = TimeSpan.FromHours(8);
-                options.SlidingExpiration = true;
+                options.AccessDeniedPath = "/Error/AccessDenied";
 
                 options.Events.OnSigningOut = async e =>
                 {
                     // automatically revoke refresh token at signout time
                     await e.HttpContext.RevokeRefreshTokenAsync();
                 };
+
             })
             .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
             {
@@ -98,6 +106,7 @@ public class Startup(IConfiguration configuration)
                     NameClaimType = JwtClaimTypes.Name,
                     RoleClaimType = JwtClaimTypes.Role
                 };
+
             });
 
         services.AddBff(options => {
@@ -123,7 +132,7 @@ public class Startup(IConfiguration configuration)
         app.UseStaticFiles();
 
         app.UseRouting();
-
+        app.UseSession();
         app.UseAuthentication();
         app.UseAuthorization();
 

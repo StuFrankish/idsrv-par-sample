@@ -12,15 +12,25 @@ public class HomeController() : Controller
 
     public IActionResult Secure() => View();
 
-    public IActionResult Logout() => SignOut(OpenIdConnectDefaults.AuthenticationScheme, CookieAuthenticationDefaults.AuthenticationScheme);
+    [AllowAnonymous]
+    public IActionResult Logout()
+    {
+        if (User.Identity.IsAuthenticated)
+            return SignOut(OpenIdConnectDefaults.AuthenticationScheme, CookieAuthenticationDefaults.AuthenticationScheme);
+
+        return RedirectToAction(nameof(LoggedOut));
+    }
 
     [AllowAnonymous]
-    public IActionResult AccessDenied() => View();
+    public IActionResult LoggedOut()
+    {
+        if (User.Identity.IsAuthenticated)
+        {
+            // Redirect to home page if the user is authenticated.
+            return RedirectToAction(actionName: "Index", controllerName: "Home");
+        }
 
-    [AllowAnonymous]
-    public IActionResult Error() => View();
-
-    [AllowAnonymous]
-    public IActionResult LoggedOut() => View();
+        return View();
+    }
 
 }
