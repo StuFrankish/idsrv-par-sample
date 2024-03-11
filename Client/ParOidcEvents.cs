@@ -3,6 +3,7 @@ using Duende.Bff;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -24,7 +25,7 @@ public class ParOidcEvents(HttpClient httpClient, IDiscoveryCache discoveryCache
 
     public override Task SignedOutCallbackRedirect(RemoteSignOutContext context)
     {
-        // Custom logic for access denied
+        // Custom logic for logged out
         _logger.LogInformation(message: "Signed Out Handled in ParOidc Events");
 
         context.Response.Redirect(location: "/Home/LoggedOut");
@@ -38,7 +39,7 @@ public class ParOidcEvents(HttpClient httpClient, IDiscoveryCache discoveryCache
         // Custom logic for access denied
         _logger.LogWarning(message: "Access Denied Handled in ParOidc Events");
 
-        context.Response.Redirect(location: "/Home/AccessDenied");
+        context.Response.Redirect(location: "/Error/AccessDenied");
         context.HandleResponse();
 
         return Task.CompletedTask;
@@ -47,9 +48,13 @@ public class ParOidcEvents(HttpClient httpClient, IDiscoveryCache discoveryCache
     public override Task RemoteFailure(RemoteFailureContext context)
     {
         // Custom logic for handling remote failures
-        _logger.LogError(message: "Remote Failure Handled in ParOidc Events");
+        _logger.LogError(
+            exception: context.Failure,
+            message: "Remote Failure Handled in ParOidc Events"
+        );
 
-        context.Response.Redirect(location: "/Home/Error");
+        context.HttpContext.Session.SetString(key: "AuthError", value: context.Failure.Message);
+        context.Response.Redirect(location: "/Error/AuthError");
         context.HandleResponse();
 
         return Task.CompletedTask;
