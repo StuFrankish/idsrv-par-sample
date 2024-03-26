@@ -94,18 +94,23 @@ internal static class HostingExtensions
 
         // Add Identity Server Middleware
 
-        var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
+        void configureDbContext(DbContextOptionsBuilder builder) =>
+            builder.UseSqlServer(connectionStrings.SqlServer, sql => sql.MigrationsAssembly(typeof(Program).Assembly.GetName().Name));
+
         builder.Services.AddIdentityServer(options =>
             {
                 options.PushedAuthorization.AllowUnregisteredPushedRedirectUris = true;
+                options.ServerSideSessions.RemoveExpiredSessions = true;
+                options.ServerSideSessions.RemoveExpiredSessionsFrequency = TimeSpan.FromMinutes(5);
+                options.ServerSideSessions.ExpiredSessionsTriggerBackchannelLogout = true;
             })
             .AddConfigurationStore(options =>
             {
-                options.ConfigureDbContext = builder => builder.UseSqlServer(connectionStrings.SqlServer, sql => sql.MigrationsAssembly(migrationsAssembly));
+                options.ConfigureDbContext = configureDbContext;
             })
             .AddOperationalStore(options =>
             {
-                options.ConfigureDbContext = builder => builder.UseSqlServer(connectionStrings.SqlServer, sql => sql.MigrationsAssembly(migrationsAssembly));
+                options.ConfigureDbContext = configureDbContext;
             })
             .AddServerSideSessions()
             .AddCustomAuthorizeRequestValidator<CustomAuthorizeEndpointValidator>()

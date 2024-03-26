@@ -46,7 +46,7 @@ public class Startup(IConfiguration configuration)
             options.BaseAddress = new Uri(uriString: identityProviderOptions.Authority);
         });
 
-        // Add session
+        // Add session storage
         services.AddDistributedMemoryCache();
         services.AddSession(options =>
         {
@@ -113,6 +113,7 @@ public class Startup(IConfiguration configuration)
             options.LicenseKey = licenseOptions.DuendeBFF;
             options.EnableSessionCleanup = true;
             options.SessionCleanupInterval = TimeSpan.FromMinutes(5);
+            options.BackchannelLogoutAllUserSessions = true;
         })
         .AddServerSideSessions();
 
